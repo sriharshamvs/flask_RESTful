@@ -45,6 +45,8 @@ class User:
 
 
 class UserRegister(Resource):
+    
+    # Get data from a Request
     parser = reqparse.RequestParser()
     parser.add_argument('username',
         type=str,
@@ -59,7 +61,10 @@ class UserRegister(Resource):
 
     def post(self):
         data = UserRegister.parser.parse_args()
-        
+
+        if User.find_by_username(data['username']):
+            return {"message": "Username already Exists"}, 400
+
         connection = sqlite3.connect(db_location)
         cursor = connection.cursor()
 
