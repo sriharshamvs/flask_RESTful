@@ -1,5 +1,6 @@
 import sqlite3
 import sys
+from flask_restful import Resource, reqparse
 
 # Path of the DB file depends from where "app.py" is executed.
 db_location = "data.db"
@@ -41,3 +42,31 @@ class User:
 
         connection.close()
         return user
+
+
+class UserRegister(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('username',
+        type=str,
+        required=True,
+        help="This field cannot be empty!"
+    )
+    parser.add_argument('password',
+        type=str,
+        required=True,
+        help="This field cannot be empty!"
+    )
+
+    def post(self):
+        data = UserRegister.parser.parse_args()
+        
+        connection = sqlite3.connect(db_location)
+        cursor = connection.cursor()
+
+        query = "INSERT INTO users VALUES (NULL, ?, ?)"
+        cursor.execute(query, (data['username'], data['password']))
+
+        connection.commit()
+        connection.close()
+
+        return {"message": "User Created Successfully"}, 201
