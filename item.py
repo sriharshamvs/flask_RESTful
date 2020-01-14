@@ -12,8 +12,9 @@ class Item(Resource):
         help="This field cannot be left empty!"
     )
 
-    @jwt_required()
-    def get(self, name):
+    # DB operation Methods
+    @classmethod
+    def find_by_name(cls, name):
         connection = sqlite3.connect(db_location)
         cursor = connection.cursor()
 
@@ -21,51 +22,113 @@ class Item(Resource):
         result = cursor.execute(query, (name,))
         row = result.fetchone()
         connection.close()
-
         if row:
-            response = {"item": {
-                'name': row[0],
-                'price': row[1]
-            }}
-            return response, 200
-    
-        response = {
-            "message": "Item Not Found"
-        }
-        return response, 400
+            return row
 
+    @classmethod
+    def insert_item(cls, item):
+        connection = sqlite3.connect(db_location)
+        cursor = connection.cursor()
+        query = "INSERT INTO items VALUES (?, ?)"
+        cursor.execute(query, (item['name'], item['price']))
+        connection.commit()
+        connection.close()
+    
+    @classmethod
+    def update_item(cls, item):
+        connection = sqlite3.connect(db_location)
+        cursor = connection.cursor()
+        query = "UPDATE items SET price=? WHERE name=?"
+        cursor.execute(query, (item['price'], item['name']))
+        connection.commit()
+        connection.close() 
+
+    # CRUD Operations 
+    
+    #Create
+    @jwt_required()
     def post(self, name):
-        if next(filter(lambda x: x['name'] == name, items), None) is not None:
+        if Item.find_by_name(name):
             return {'message': "An item with name '{}' already exists".format(name)}, 400
         data = Item.parser.parse_args()
         item = {
             'name': name,
             'price': data['price']
         }
-        items.append(item)
-        return item, 201
-
-    def delete(self, name):
-        global items
-        items = list(filter(lambda  x: x['name'] != name, items))
-        return {'message': 'Item Deleted'}
-
-    def put(self, name):
-        item = next(filter(lambda x: x['name'] == name, items), None)
+        try:
+            Item.insert_item(item)
+        except:
+            return {"message": "Error Occured inserting Item"}, 500
         
+        return item, 201
+    
+    # Read
+    @jwt_required()
+    def get(self, name):
+        item = Item.find_by_name(name)
+        if item:
+            response = {"item": {
+                'name': item[0],
+                'price': item[1]
+            }}
+            return response, 200
+        
+        response = {
+            "message": "Item Not Found"
+        }
+        return response, 400
+
+    # Update
+    @jwt_required()
+    def put(self, name):
         data = Item.parser.parse_args()
 
-        if item is None:
-            item = {
+        item = Item.find_by_name(name)
+        updated_item = {
                 'name': name,
                 'price': data['price']
             }
-            items.append(item)
+        if item is None:
+            try:
+                Item.insert_item(updated_item)
+            except:
+                return {"message": "Error Occured inserting Item"}, 500
         else:
-            item.update(data)
+            try:
+                Item.update_item(updated_item)
+            except:
+                return {"message": "Error Occured Updating Item"}, 500
         
-        return item, 201
+        return updated_item, 201
+
+    # Delete
+    @jwt_required()
+    def delete(self, name):
+        connection = sqlite3.connect(db_location)
+        cursor = connection.cursor()
+        query = "DELETE FROM items WHERE name=?"
+        cursor.execute(query, (name,))
+        connection.commit()
+        connection.close()       
+
+        return {'message': 'Item Deleted'}, 201
 
 class ItemList(Resource):
+    # Read all the Items 
     def get(self):
+        connection = sqlite3.connect(db_location)
+        cursor = connection.cursor()
+        query = "SELECT * FROM items"
+        result = cursor.execute(query)
+        
+        items = []
+        for row in result:
+            items.append({
+                'name': row[0],
+                'price': row[1]
+            })
+
+        connection.commit()
+        connection.close()
+
         return {'items': items}, 200
