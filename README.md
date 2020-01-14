@@ -1,3 +1,17 @@
-# Flask Tutorial
+# Flask RESTful API
 
-- This Repo contains Flask RESTful API implementation
+## To Deploy 
+
+- Clone the Repo 
+```
+git clone git@github.com:sriharshamvs/flask_RESTful.git
+cd flask_RESTful
+```
+- Install Dependencies
+```
+pip install -r requirements.txt
+```
+- Run the Application
+```
+python3 app.py
+```
