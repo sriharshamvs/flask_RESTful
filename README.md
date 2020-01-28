@@ -14,7 +14,6 @@ pip3 install -r requirements.txt
 ```
 
 - Create DB
->>>>>>> old_stable
 ```
 python3 helpers/create_tables.py
 ```
