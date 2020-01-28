@@ -7,7 +7,7 @@ from helpers.user import UserRegister
 from item import Item, ItemList
 
 app = Flask(__name__)
-app.secret_key = "mvs"
+app.secret_key = "secretekey"
 api = Api(app)
 
 jwt = JWT(app, authenticate, identity) #/auth
